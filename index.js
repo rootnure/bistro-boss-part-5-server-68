@@ -41,9 +41,22 @@ async function run() {
     });
 
     // middlewares
+    const verifyToken = (req, res, next) => {
+      if (!req?.headers?.authorization) {
+        return res.status(401).send({ message: "Unauthorized Access" });
+      }
+      const token = req?.headers?.authorization.split(" ")[1];
+      jwt.verify(token, process.env.TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+          return res.status(401).send({ message: "Unauthorized Access" });
+        }
+        res.decoded = decoded;
+        next();
+      });
+    };
 
     // users related api
-    app.get("/users", async (req, res) => {
+    app.get("/users", verifyToken, async (req, res) => {
       const query = { role: { $ne: "superior" } };
       const users = await userCollection.find(query).toArray();
       res.send(users);
